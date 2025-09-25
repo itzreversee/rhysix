@@ -7,6 +7,7 @@ pub const CELL_SIZE: usize = 4;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Material {
+  OOB,
   AIR,
   SAND,
   STONE,
@@ -30,7 +31,7 @@ impl Sandbox {
     y * SANDBOX_WIDTH + x
   }
 
-  fn get(&self, x: usize, y: usize) -> Option<Material> {
+  pub fn get(&self, x: usize, y: usize) -> Option<Material> {
     let pos = Self::pos(x, y);
     if pos > SANDBOX_SIZE {
       None
@@ -56,11 +57,28 @@ impl Sandbox {
     &self.cells
   }
 
-  pub fn get_cell_under(&self, x: usize, y: usize) -> Material {
-    self.get(x, y + 1).unwrap_or(Material::AIR)
+  // === cell helpers
+  
+  fn get_cell_under(&self, x: usize, y: usize) -> Material {
+    self.get(x, y + 1).unwrap_or(Material::OOB)
   }
 
-  // logic
+  fn get_cell_left(&self, x: usize, y: usize) -> Material {
+    if x == 0 {
+      return Material::OOB;
+    }
+    self.get(x - 1, y + 1).unwrap_or(Material::OOB)
+  }
+
+  fn get_cell_right(&self, x: usize, y: usize) -> Material {
+    if x >= SANDBOX_WIDTH - 1 {
+      return Material::OOB;
+    }
+    self.get(x + 1, y + 1).unwrap_or(Material::OOB)
+  }
+
+
+  // === logic
 
   pub fn tick(&mut self) {
     if self.paused {
@@ -68,7 +86,7 @@ impl Sandbox {
     }
     
     for y in (0..SANDBOX_HEIGHT - 1).rev() {
-      for x in 0..SANDBOX_WIDTH - 1 {
+      for x in 0..SANDBOX_WIDTH  {
         self.update_cell(x, y);
       }
     }
@@ -78,7 +96,7 @@ impl Sandbox {
   fn update_cell(&mut self, x: usize, y: usize) {
     let mat = self.get_unchecked(x, y);
     match mat {
-      Material::SAND => self._update_sand(x, y),
+      Material::SAND => self._update_powder(x, y),
       _ => {}
     }
   }
@@ -89,14 +107,14 @@ impl Sandbox {
 
   // logic by-material
 
-  fn _update_sand(&mut self, x: usize, y: usize) {
+  fn _update_powder(&mut self, x: usize, y: usize) {
     if self.get_cell_under(x, y) == Material::AIR {
       self.set(x, y, Material::AIR);
       self.set(x, y + 1, Material::SAND);
-    } else if self.get(x - 1, y + 1).unwrap_or(Material::AIR) == Material::AIR {
+    } else if self.get_cell_left(x, y) == Material::AIR {
       self.set(x, y, Material::AIR);
       self.set(x - 1, y + 1, Material::SAND);
-    } else if self.get(x + 1, y + 1).unwrap_or(Material::AIR) == Material::AIR {
+    } else if self.get_cell_right(x, y) == Material::AIR {
       self.set(x, y, Material::AIR);
       self.set(x + 1, y + 1, Material::SAND);
     }
