@@ -1,4 +1,7 @@
+
 use raylib::{color::Color, prelude::{RaylibDraw, RaylibDrawHandle}};
+
+use crate::cell::Cell;
 
 pub const SANDBOX_WIDTH: usize = 200;
 pub const SANDBOX_HEIGHT: usize = 150;
@@ -10,19 +13,21 @@ pub enum Material {
   OOB,
   AIR,
   SAND,
+  WATER,
   STONE,
-  WATER
 }
 
+
+
 pub struct Sandbox {
-  cells: Vec<Material>,
+  cells: Vec<Cell>,
   paused: bool
 }
 
 impl Sandbox {
   pub fn new() -> Self {
     Self {
-      cells: vec![Material::AIR; SANDBOX_SIZE],
+      cells: vec![Cell{material: Material::AIR, temperature: 0}; SANDBOX_SIZE],
       paused: false
     }
   }
@@ -31,7 +36,7 @@ impl Sandbox {
     y * SANDBOX_WIDTH + x
   }
 
-  pub fn get(&self, x: usize, y: usize) -> Option<Material> {
+  pub fn get(&self, x: usize, y: usize) -> Option<Cell> {
     let pos = Self::pos(x, y);
     if pos > SANDBOX_SIZE {
       None
@@ -40,41 +45,41 @@ impl Sandbox {
     }
   }
 
-  fn get_unchecked(&self, x: usize, y: usize) -> Material {
+  fn get_unchecked(&self, x: usize, y: usize) -> Cell {
     self.cells[Self::pos(x, y)]
   }
 
-  pub fn set(&mut self, x: usize, y: usize, mat: Material) {
+  pub fn set(&mut self, x: usize, y: usize, cel: Cell) {
     let pos = Self::pos(x, y);
     if pos > SANDBOX_SIZE {
       return;
     } else {
-      self.cells[pos] = mat;
+      self.cells[pos] = cel;
     }
   }
 
-  pub fn get_buffer(&self) -> &Vec<Material> {
+  pub fn get_buffer(&self) -> &Vec<Cell> {
     &self.cells
   }
 
   // === cell helpers
   
-  fn get_cell_under(&self, x: usize, y: usize) -> Material {
-    self.get(x, y + 1).unwrap_or(Material::OOB)
+  fn get_cell_under(&self, x: usize, y: usize) -> Cell {
+    self.get(x, y + 1).unwrap_or(Cell::oob())
   }
 
-  fn get_cell_left(&self, x: usize, y: usize) -> Material {
+  fn get_cell_left(&self, x: usize, y: usize) -> Cell {
     if x == 0 {
-      return Material::OOB;
+      return Cell::oob();
     }
-    self.get(x - 1, y + 1).unwrap_or(Material::OOB)
+    self.get(x - 1, y + 1).unwrap_or(Cell::oob())
   }
 
-  fn get_cell_right(&self, x: usize, y: usize) -> Material {
+  fn get_cell_right(&self, x: usize, y: usize) -> Cell {
     if x >= SANDBOX_WIDTH - 1 {
-      return Material::OOB;
+      return Cell::oob();
     }
-    self.get(x + 1, y + 1).unwrap_or(Material::OOB)
+    self.get(x + 1, y + 1).unwrap_or(Cell::oob())
   }
 
 
@@ -94,8 +99,8 @@ impl Sandbox {
   }
 
   fn update_cell(&mut self, x: usize, y: usize) {
-    let mat = self.get_unchecked(x, y);
-    match mat {
+    let cel = self.get_unchecked(x, y);
+    match cel.material {
       Material::SAND => self._update_powder(x, y),
       _ => {}
     }
@@ -108,26 +113,26 @@ impl Sandbox {
   // logic by-material
 
   fn _update_powder(&mut self, x: usize, y: usize) {
-    if self.get_cell_under(x, y) == Material::AIR {
-      self.set(x, y, Material::AIR);
-      self.set(x, y + 1, Material::SAND);
-    } else if self.get_cell_left(x, y) == Material::AIR {
-      self.set(x, y, Material::AIR);
-      self.set(x - 1, y + 1, Material::SAND);
-    } else if self.get_cell_right(x, y) == Material::AIR {
-      self.set(x, y, Material::AIR);
-      self.set(x + 1, y + 1, Material::SAND);
+    if self.get_cell_under(x, y).material == Material::AIR {
+      self.set(x, y, Cell::air());
+      self.set(x, y + 1, Cell::sand());
+    } else if self.get_cell_left(x, y).material == Material::AIR {
+      self.set(x, y, Cell::air());
+      self.set(x - 1, y + 1, Cell::sand());
+    } else if self.get_cell_right(x, y).material == Material::AIR {
+      self.set(x, y, Cell::air());
+      self.set(x + 1, y + 1, Cell::sand());
     }
   }
 }
 
-pub fn render_sandbox(cells: &Vec<Material>, handle: &mut RaylibDrawHandle) {
+pub fn render_sandbox(cells: &Vec<Cell>, handle: &mut RaylibDrawHandle) {
   for y in 0..SANDBOX_HEIGHT {
     for x in 0..SANDBOX_WIDTH {
       let pos = y * SANDBOX_WIDTH + x;
       let mat = cells[pos];
 
-      let color: Color = match mat {
+      let color: Color = match mat.material {
         Material::SAND => Color::YELLOW,
         _ => Color::BLACK
       };

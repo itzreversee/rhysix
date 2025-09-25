@@ -1,11 +1,12 @@
 mod util;
 mod sandbox;
+mod cell;
 
 use std::time::{Duration, Instant};
 
-use raylib::ffi::SCROLLBAR_RIGHT_SIDE;
 use raylib::prelude::*;
 
+use crate::cell::Cell;
 use crate::util::{text_to_width};
 use crate::sandbox::{render_sandbox, window_to_world, Sandbox, Material};
 
@@ -33,7 +34,7 @@ impl GameThread {
     if self.handle.is_mouse_button_down(MouseButton::MOUSE_BUTTON_LEFT) {
       let mouse_pos = self.handle.get_mouse_position();
       window_to_world(mouse_pos.x as i32, mouse_pos.y as i32).map(|pos| {
-        self.sandbox.set(pos.0, pos.1, Material::SAND);
+        self.sandbox.set(pos.0, pos.1, Cell::sand());
       });
     }
 
