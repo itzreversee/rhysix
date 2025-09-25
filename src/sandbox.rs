@@ -1,4 +1,6 @@
 
+use rand::seq::{IndexedRandom};
+use rand::prelude::SliceRandom;
 use raylib::{color::Color, prelude::{RaylibDraw, RaylibDrawHandle}};
 
 use crate::cell::Cell;
@@ -17,18 +19,20 @@ pub enum Material {
   STONE,
 }
 
-
-
 pub struct Sandbox {
   cells: Vec<Cell>,
-  paused: bool
+  paused: bool,
+  hand_cell: Cell,
+  hand_size: usize
 }
 
 impl Sandbox {
   pub fn new() -> Self {
     Self {
-      cells: vec![Cell{material: Material::AIR, temperature: 0}; SANDBOX_SIZE],
-      paused: false
+      cells: vec![Cell::air(); SANDBOX_SIZE],
+      paused: false,
+      hand_cell: Cell::sand(),
+      hand_size: 4
     }
   }
 
@@ -49,13 +53,45 @@ impl Sandbox {
     self.cells[Self::pos(x, y)]
   }
 
-  pub fn set(&mut self, x: usize, y: usize, cel: Cell) {
+  fn set(&mut self, x: usize, y: usize, cel: Cell) {
     let pos = Self::pos(x, y);
     if pos > SANDBOX_SIZE {
       return;
     } else {
       self.cells[pos] = cel;
     }
+  }
+
+  pub fn place(&mut self, x: usize, y: usize) {
+    for oy in 0..self.hand_size {
+      for ox in 0..self.hand_size {
+        self.set(ox + x, oy + y, self.hand_cell);
+      }
+    }
+  }
+
+  pub fn set_hand_cell(&mut self, cell: Cell) {
+    self.hand_cell = cell;
+  }
+  pub fn get_hand_cell(&mut self) -> Cell {
+    self.hand_cell
+  }
+
+  pub fn inc_size(&mut self) {
+    self.hand_size += 1;
+    if self.hand_size > 10 {
+      self.hand_size = 10;
+    }
+  }
+  pub fn dec_size(&mut self) {
+    if self.hand_size == 1 {
+      self.hand_size = 1;
+      return;
+    }
+    self.hand_size -= 1;
+  }
+  pub fn get_size(&mut self) -> usize{
+    self.hand_size
   }
 
   pub fn get_buffer(&self) -> &Vec<Cell> {
@@ -68,20 +104,49 @@ impl Sandbox {
     self.get(x, y + 1).unwrap_or(Cell::oob())
   }
 
-  fn get_cell_left(&self, x: usize, y: usize) -> Cell {
+  fn get_pos_left(&self, x: usize, y: usize) -> Option<(usize, usize)> {
     if x == 0 {
-      return Cell::oob();
+      return None;
     }
-    self.get(x - 1, y + 1).unwrap_or(Cell::oob())
+    Some((x - 1, y))
   }
 
-  fn get_cell_right(&self, x: usize, y: usize) -> Cell {
+  fn get_pos_right(&self, x: usize, y: usize) -> Option<(usize, usize)> {
     if x >= SANDBOX_WIDTH - 1 {
-      return Cell::oob();
+      return None;
     }
-    self.get(x + 1, y + 1).unwrap_or(Cell::oob())
+    Some((x + 1, y))
+  }
+  
+  fn get_pos_bot_left(&self, x: usize, y: usize) -> Option<(usize, usize)> {
+    if x == 0 || y >= SANDBOX_HEIGHT - 1  {
+      return None;
+    }
+    Some((x - 1, y + 1))
+  }
+  
+  fn get_pos_bot_right(&self, x: usize, y: usize) -> Option<(usize, usize)> {
+    if x >= SANDBOX_WIDTH - 1 || y >= SANDBOX_HEIGHT - 1  {
+      return None;
+    }
+    Some((x + 1, y + 1))
   }
 
+
+  fn get_cell_from_pos_or_oob(&self, pos: Option<(usize, usize)>) -> Cell {
+    if pos == None {
+      return Cell::oob();
+    }
+    let pos = pos.unwrap();
+    self.get(pos.0, pos.1).unwrap_or(Cell::oob())
+  }
+
+  fn swap_cell(&mut self, ax: usize, ay: usize, bx: usize, by: usize) {
+    let a = self.get_unchecked(ax, ay);
+    let b = self.get_unchecked(bx, by);
+    self.set(ax, ay, b);
+    self.set(bx, by, a);
+  }
 
   // === logic
 
@@ -102,6 +167,7 @@ impl Sandbox {
     let cel = self.get_unchecked(x, y);
     match cel.material {
       Material::SAND => self._update_powder(x, y),
+      Material::WATER => self._update_liquid(x, y),
       _ => {}
     }
   }
@@ -113,15 +179,69 @@ impl Sandbox {
   // logic by-material
 
   fn _update_powder(&mut self, x: usize, y: usize) {
-    if self.get_cell_under(x, y).material == Material::AIR {
-      self.set(x, y, Cell::air());
-      self.set(x, y + 1, Cell::sand());
-    } else if self.get_cell_left(x, y).material == Material::AIR {
-      self.set(x, y, Cell::air());
-      self.set(x - 1, y + 1, Cell::sand());
-    } else if self.get_cell_right(x, y).material == Material::AIR {
-      self.set(x, y, Cell::air());
-      self.set(x + 1, y + 1, Cell::sand());
+    if self.get_cell_under(x, y).weight < 2 {
+      self.swap_cell(x, y, x, y + 1);
+    } else if self.get_cell_from_pos_or_oob(self.get_pos_left(x, y)).weight < 2 {
+      self.swap_cell(x, y, x - 1, y + 1);
+    } else if self.get_cell_from_pos_or_oob(self.get_pos_right(x, y)).weight < 2 {
+      self.swap_cell(x, y, x + 1, y + 1);
+    }
+  }
+
+  fn _update_liquid(&mut self, x: usize, y: usize) {
+    if self.get_cell_under(x, y).weight < 1 {
+      self.swap_cell(x, y, x, y + 1);
+      return;
+    }
+    
+    let mut rng = rand::rng();
+    let mut dirs_diag = [(-1, 1), (1, 1)];
+    let mut dirs_flat = [(-1, 0), (1, 0)];
+
+    dirs_diag.shuffle(&mut rng);
+    dirs_flat.shuffle(&mut rng);
+
+    // let lb_free: bool = self.get_cell_from_pos_or_oob(self.get_pos_bot_left(x, y)).weight < 1;
+    // let rb_free: bool = self.get_cell_from_pos_or_oob(self.get_pos_bot_right(x, y)).weight < 1;
+    // let l_free: bool = self.get_cell_from_pos_or_oob(self.get_pos_left(x, y)).weight < 1;
+    // let r_free: bool = self.get_cell_from_pos_or_oob(self.get_pos_right(x, y)).weight < 1;
+
+    self._update_liquid_balance(x, y, dirs_diag);
+    self._update_liquid_balance(x, y, dirs_flat);
+    
+  }
+
+  fn _update_liquid_balance(&mut self, x: usize, y: usize, dirs: [(isize, isize); 2]) {
+    for dist in 1..16 {
+      let mut wall = false;
+
+      if wall {
+        break;
+      }
+
+      for (dx, dy) in dirs {
+
+        if wall {
+          break;
+        }
+
+        let nx = x as isize + (dx * dist);
+        let ny = y as isize + dy;
+
+        if nx < 0 || nx >= (SANDBOX_WIDTH - 1) as isize || ny > (SANDBOX_HEIGHT - 1) as isize {
+          break;
+        }
+
+        if let Some(cel) = self.get(nx as usize, ny as usize) {
+          if cel.weight < 1 {
+            self.swap_cell(x, y, nx as usize, ny as usize);
+            break;
+          } else {
+            wall = true;
+          }
+        }
+      
+      }
     }
   }
 }
@@ -134,6 +254,8 @@ pub fn render_sandbox(cells: &Vec<Cell>, handle: &mut RaylibDrawHandle) {
 
       let color: Color = match mat.material {
         Material::SAND => Color::YELLOW,
+        Material::STONE => Color::GRAY,
+        Material::WATER => Color::BLUE,
         _ => Color::BLACK
       };
 
