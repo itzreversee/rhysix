@@ -36,6 +36,13 @@ impl GameThread {
       });
     }
 
+    match self.handle.get_key_pressed() {
+      Some(KeyboardKey::KEY_SPACE) => {
+        self.sandbox.toggle_pause();
+      }
+      _ => {}
+    }
+
     // update
     if self.last_tick.elapsed() >= self.tick_rate {
       self.sandbox.tick();

@@ -14,13 +14,15 @@ pub enum Material {
 }
 
 pub struct Sandbox {
-  cells: Vec<Material>
+  cells: Vec<Material>,
+  paused: bool
 }
 
 impl Sandbox {
   pub fn new() -> Self {
     Self {
       cells: vec![Material::AIR; SANDBOX_SIZE],
+      paused: false
     }
   }
 
@@ -61,6 +63,10 @@ impl Sandbox {
   // logic
 
   pub fn tick(&mut self) {
+    if self.paused {
+      return;
+    }
+    
     for y in (0..SANDBOX_HEIGHT - 1).rev() {
       for x in 0..SANDBOX_WIDTH - 1 {
         self.update_cell(x, y);
@@ -75,6 +81,10 @@ impl Sandbox {
       Material::SAND => self._update_sand(x, y),
       _ => {}
     }
+  }
+
+  pub fn toggle_pause(&mut self) {
+    self.paused = !self.paused;
   }
 
   // logic by-material
