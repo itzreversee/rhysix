@@ -3,7 +3,6 @@ mod sandbox;
 
 use std::time::{Duration, Instant};
 
-use raylib::ffi::{IsKeyDown, SetTargetFPS, WaitTime};
 use raylib::prelude::*;
 
 use crate::util::{text_to_width};
@@ -30,17 +29,11 @@ impl GameThread {
   }
 
   fn tick(&mut self) {
-    if self.handle.is_key_pressed(KeyboardKey::KEY_S) {
-      self.sandbox.test_set();
-    }
-
     if self.handle.is_mouse_button_down(MouseButton::MOUSE_BUTTON_LEFT) {
       let mouse_pos = self.handle.get_mouse_position();
       window_to_world(mouse_pos.x as i32, mouse_pos.y as i32).map(|pos| {
         self.sandbox.set(pos.0, pos.1, Material::SAND);
       });
-
-
     }
 
     // update
@@ -66,7 +59,7 @@ fn main() {
     tick_rate: std::time::Duration::from_millis(10)
   };
 
-  game_thread.sandbox.test_set();
+  game_thread.handle.set_target_fps(60);
 
   while !game_thread.handle.window_should_close() {
     game_thread.tick();

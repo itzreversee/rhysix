@@ -1,17 +1,9 @@
 use raylib::{color::Color, prelude::{RaylibDraw, RaylibDrawHandle}};
 
-use crate::GameThread;
-
-
 pub const SANDBOX_WIDTH: usize = 200;
 pub const SANDBOX_HEIGHT: usize = 150;
 pub const SANDBOX_SIZE: usize = SANDBOX_WIDTH * SANDBOX_HEIGHT;
 pub const CELL_SIZE: usize = 4;
-
-#[derive(Debug)]
-enum WorldError {
-  OutOfBounds
-}
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Material {
@@ -91,17 +83,13 @@ impl Sandbox {
     if self.get_cell_under(x, y) == Material::AIR {
       self.set(x, y, Material::AIR);
       self.set(x, y + 1, Material::SAND);
-    } else if (self.get(x - 1, y + 1).unwrap_or(Material::AIR) == Material::AIR) {
+    } else if self.get(x - 1, y + 1).unwrap_or(Material::AIR) == Material::AIR {
       self.set(x, y, Material::AIR);
       self.set(x - 1, y + 1, Material::SAND);
-    } else if (self.get(x + 1, y + 1).unwrap_or(Material::AIR) == Material::AIR) {
+    } else if self.get(x + 1, y + 1).unwrap_or(Material::AIR) == Material::AIR {
       self.set(x, y, Material::AIR);
       self.set(x + 1, y + 1, Material::SAND);
     }
-  }
-
-  pub fn test_set(&mut self) {
-    self.set(50, 10, Material::SAND);
   }
 }
 
