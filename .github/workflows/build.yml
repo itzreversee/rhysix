@@ -16,11 +16,28 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Install X11 deps (Linux only)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libx11-dev \
+            libxi-dev \
+            libxcursor-dev \
+            libxrandr-dev \
+            libxinerama-dev \
+            libgl1-mesa-dev \
+            libglu1-mesa-dev
+
       - name: Install Rust
         uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
           override: true
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          cache-targets: "false"
 
       - name: Build
         run: cargo build --release
