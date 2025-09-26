@@ -14,7 +14,7 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Install X11 deps (Linux only)
         if: runner.os == 'Linux'
@@ -36,8 +36,6 @@ jobs:
           override: true
 
       - uses: Swatinem/rust-cache@v2
-        with:
-          cache-targets: "false"
 
       - name: Build
         run: cargo build --release
