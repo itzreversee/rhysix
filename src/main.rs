@@ -1,12 +1,14 @@
 mod util;
 mod sandbox;
 mod cell;
+mod element_panel;
 
 use std::time::{Duration, Instant};
 
 use raylib::prelude::*;
 
 use crate::cell::Cell;
+use crate::element_panel::ElementPanel;
 use crate::sandbox::{render_sandbox, render_mouse_overlay, window_to_world, Sandbox};
 
 struct GameThread {
@@ -14,7 +16,8 @@ struct GameThread {
   thread: RaylibThread,
   sandbox: Sandbox,
   last_tick: Instant,
-  tick_rate: Duration
+  tick_rate: Duration,
+  element_panel: ElementPanel
 }
 
 impl GameThread {
@@ -29,19 +32,23 @@ impl GameThread {
     render_sandbox(self.sandbox.get_buffer(), &mut d);
     render_mouse_overlay(&mut d, mouse_pos, self.sandbox.get_size());
 
+    self.element_panel.render(&mut d);
+
     //let title = "rhysix meow";
-    d.draw_text(&title, 800 - width - 16, 600 - 32, 20, Color::WHITE);
+    d.draw_text(&title, 1200 - width - 16, 900 - 32, 20, Color::WHITE);
   }
 
   fn tick(&mut self) {
-    if self.handle.is_mouse_button_down(MouseButton::MOUSE_BUTTON_LEFT) {
+    let panel_shown = self.element_panel.tick(&mut self.handle, &mut self.sandbox);
+
+    if self.handle.is_mouse_button_down(MouseButton::MOUSE_BUTTON_LEFT) && !panel_shown {
       let mouse_pos = self.handle.get_mouse_position();
       window_to_world(mouse_pos.x as i32, mouse_pos.y as i32).map(|pos| {
         self.sandbox.place(pos.0, pos.1, None);
       });
     }
     
-    else if self.handle.is_mouse_button_down(MouseButton::MOUSE_BUTTON_RIGHT) {
+    else if self.handle.is_mouse_button_down(MouseButton::MOUSE_BUTTON_RIGHT) && !panel_shown{
       let mouse_pos = self.handle.get_mouse_position();
       window_to_world(mouse_pos.x as i32, mouse_pos.y as i32).map(|pos| {
         self.sandbox.place(pos.0, pos.1, Some(Cell::air()));
@@ -54,7 +61,6 @@ impl GameThread {
     } else if mouse_wheel < 0.0 {
       self.sandbox.dec_size();
     }
-    
 
     match self.handle.get_key_pressed() {
       // Controls
@@ -85,9 +91,9 @@ impl GameThread {
       }
       _ => {}
     }
-
+  
     // update
-    if self.last_tick.elapsed() >= self.tick_rate {
+    if self.last_tick.elapsed() >= self.tick_rate{
       self.sandbox.tick();
       self.last_tick = std::time::Instant::now();
     }
@@ -101,10 +107,13 @@ fn main() {
     .build();
 
   let sb =  Sandbox::new();
+  let ep = ElementPanel::new();
+
   let mut game_thread: GameThread = GameThread { 
     sandbox: sb,
-    handle: rl, 
-    thread: thread, 
+    handle: rl,
+    thread: thread,
+    element_panel: ep,
     last_tick: std::time::Instant::now(),
     tick_rate: std::time::Duration::from_millis(10)
   };
