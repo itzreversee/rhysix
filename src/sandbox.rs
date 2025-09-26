@@ -1,7 +1,6 @@
 
-use rand::seq::{IndexedRandom};
 use rand::prelude::SliceRandom;
-use raylib::{color::Color, prelude::{RaylibDraw, RaylibDrawHandle}};
+use raylib::{color::Color, math::Vector2, prelude::{RaylibDraw, RaylibDrawHandle}};
 
 use crate::cell::Cell;
 
@@ -62,10 +61,10 @@ impl Sandbox {
     }
   }
 
-  pub fn place(&mut self, x: usize, y: usize) {
+  pub fn place(&mut self, x: usize, y: usize, ovr: Option<Cell>) {
     for oy in 0..self.hand_size {
       for ox in 0..self.hand_size {
-        self.set(ox + x, oy + y, self.hand_cell);
+        self.set(ox + x, oy + y, ovr.unwrap_or(self.hand_cell));
       }
     }
   }
@@ -98,6 +97,10 @@ impl Sandbox {
     &self.cells
   }
 
+  pub fn reset(&mut self) {
+    self.cells.fill(Cell::air());
+  }
+
   // === cell helpers
   
   fn get_cell_under(&self, x: usize, y: usize) -> Cell {
@@ -118,6 +121,7 @@ impl Sandbox {
     Some((x + 1, y))
   }
   
+  
   fn get_pos_bot_left(&self, x: usize, y: usize) -> Option<(usize, usize)> {
     if x == 0 || y >= SANDBOX_HEIGHT - 1  {
       return None;
@@ -131,7 +135,7 @@ impl Sandbox {
     }
     Some((x + 1, y + 1))
   }
-
+  
 
   fn get_cell_from_pos_or_oob(&self, pos: Option<(usize, usize)>) -> Cell {
     if pos == None {
@@ -181,9 +185,9 @@ impl Sandbox {
   fn _update_powder(&mut self, x: usize, y: usize) {
     if self.get_cell_under(x, y).weight < 2 {
       self.swap_cell(x, y, x, y + 1);
-    } else if self.get_cell_from_pos_or_oob(self.get_pos_left(x, y)).weight < 2 {
+    } else if self.get_cell_from_pos_or_oob(self.get_pos_bot_left(x, y)).weight < 2 {
       self.swap_cell(x, y, x - 1, y + 1);
-    } else if self.get_cell_from_pos_or_oob(self.get_pos_right(x, y)).weight < 2 {
+    } else if self.get_cell_from_pos_or_oob(self.get_pos_bot_right(x, y)).weight < 2 {
       self.swap_cell(x, y, x + 1, y + 1);
     }
   }
@@ -206,25 +210,13 @@ impl Sandbox {
     // let l_free: bool = self.get_cell_from_pos_or_oob(self.get_pos_left(x, y)).weight < 1;
     // let r_free: bool = self.get_cell_from_pos_or_oob(self.get_pos_right(x, y)).weight < 1;
 
-    self._update_liquid_balance(x, y, dirs_diag);
-    self._update_liquid_balance(x, y, dirs_flat);
-    
+    self._update_liquid_balance(x, y, dirs_diag, 4);
+    self._update_liquid_balance(x, y, dirs_flat, 8);
   }
 
-  fn _update_liquid_balance(&mut self, x: usize, y: usize, dirs: [(isize, isize); 2]) {
-    for dist in 1..16 {
-      let mut wall = false;
-
-      if wall {
-        break;
-      }
-
+  fn _update_liquid_balance(&mut self, x: usize, y: usize, dirs: [(isize, isize); 2], dist:  isize) {
+    for dist in 1..dist {
       for (dx, dy) in dirs {
-
-        if wall {
-          break;
-        }
-
         let nx = x as isize + (dx * dist);
         let ny = y as isize + dy;
 
@@ -237,7 +229,7 @@ impl Sandbox {
             self.swap_cell(x, y, nx as usize, ny as usize);
             break;
           } else {
-            wall = true;
+            return;
           }
         }
       
@@ -269,6 +261,10 @@ pub fn render_sandbox(cells: &Vec<Cell>, handle: &mut RaylibDrawHandle) {
   }
 }
 
+pub fn render_mouse_overlay(handle: &mut RaylibDrawHandle, mouse_pos: Vector2, size: usize) {
+  handle.draw_rectangle_lines((mouse_pos.x - 1.0) as i32, (mouse_pos.y + 1.0) as i32, (size * CELL_SIZE) as i32, (size * CELL_SIZE) as i32, Color::WHITE);
+}
+
 pub fn window_to_world(x: i32, y: i32) -> Option<(usize, usize)> {
   let sx = x / CELL_SIZE as i32;
   let sy = y / CELL_SIZE as i32;
@@ -283,3 +279,4 @@ pub fn window_to_world(x: i32, y: i32) -> Option<(usize, usize)> {
 
   Some((sx as usize, sy as usize))
 }
+

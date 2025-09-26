@@ -7,7 +7,7 @@ use std::time::{Duration, Instant};
 use raylib::prelude::*;
 
 use crate::cell::Cell;
-use crate::sandbox::{render_sandbox, window_to_world, Sandbox};
+use crate::sandbox::{render_sandbox, render_mouse_overlay, window_to_world, Sandbox};
 
 struct GameThread {
   handle: RaylibHandle,
@@ -21,11 +21,13 @@ impl GameThread {
   fn render(&mut self) {
     let title = format!("{:?}; {:?}", (self.sandbox.get_hand_cell().material), (self.sandbox.get_size()));
     let width = self.handle.measure_text(&title, 20);
+    let mouse_pos = self.handle.get_mouse_position();
 
     let mut d = self.handle.begin_drawing(&self.thread);
     d.clear_background(Color::BLACK);
 
     render_sandbox(self.sandbox.get_buffer(), &mut d);
+    render_mouse_overlay(&mut d, mouse_pos, self.sandbox.get_size());
 
     //let title = "rhysix meow";
     d.draw_text(&title, 800 - width - 16, 600 - 32, 20, Color::WHITE);
@@ -35,16 +37,24 @@ impl GameThread {
     if self.handle.is_mouse_button_down(MouseButton::MOUSE_BUTTON_LEFT) {
       let mouse_pos = self.handle.get_mouse_position();
       window_to_world(mouse_pos.x as i32, mouse_pos.y as i32).map(|pos| {
-        self.sandbox.place(pos.0, pos.1);
+        self.sandbox.place(pos.0, pos.1, None);
       });
     }
-
+    
     else if self.handle.is_mouse_button_down(MouseButton::MOUSE_BUTTON_RIGHT) {
       let mouse_pos = self.handle.get_mouse_position();
       window_to_world(mouse_pos.x as i32, mouse_pos.y as i32).map(|pos| {
-        println!("{}", format!("maus: {:?}", (pos, self.sandbox.get(pos.0, pos.1))))
+        self.sandbox.place(pos.0, pos.1, Some(Cell::air()));
       });
     }
+
+    let mouse_wheel = self.handle.get_mouse_wheel_move();
+    if mouse_wheel > 0.0 {
+      self.sandbox.inc_size();
+    } else if mouse_wheel < 0.0 {
+      self.sandbox.dec_size();
+    }
+    
 
     match self.handle.get_key_pressed() {
       // Controls
@@ -56,6 +66,9 @@ impl GameThread {
       }
       Some(KeyboardKey::KEY_EQUAL) => {
         self.sandbox.inc_size();
+      }
+      Some(KeyboardKey::KEY_R) => {
+        self.sandbox.reset();
       }
       // Materials
       Some (KeyboardKey::KEY_ONE) => {
