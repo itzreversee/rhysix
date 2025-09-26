@@ -22,6 +22,7 @@ struct GameThread {
 
 impl GameThread {
   fn render(&mut self) {
+    let fps = self.handle.get_fps();
     let title = format!("{:?}; {:?}", (self.sandbox.get_hand_cell().material), (self.sandbox.get_size()));
     let width = self.handle.measure_text(&title, 20);
     let mouse_pos = self.handle.get_mouse_position();
@@ -36,6 +37,7 @@ impl GameThread {
 
     //let title = "rhysix meow";
     d.draw_text(&title, 1200 - width - 16, 900 - 32, 20, Color::WHITE);
+    d.draw_text(&fps.to_string(), 4, 900 - 20, 20, Color::WHITE);
   }
 
   fn tick(&mut self) {
