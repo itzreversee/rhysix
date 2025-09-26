@@ -14,6 +14,7 @@ Small sandbox-like physics engine in Rust using [raylib](https://crates.io/crate
 Requirements: **rust**.  
 Tested Linux native build and Windows by Wine.  
 To build, use `cargo build --release`.
+Or download a binary from [Releases](https://github.com/itzreversee/rhysix/releases) page or [Actions](https://github.com/itzreversee/rhysix/actions) tab
 
 ## Quirks
 - When quickly dragging mouse while placing, there may be missing spots due to ticks being delayed.
