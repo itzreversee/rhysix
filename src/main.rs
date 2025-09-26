@@ -102,7 +102,7 @@ impl GameThread {
 
 fn main() {
   let (rl, thread) = raylib::init()
-    .size(800, 600)
+    .size(1200, 900)
     .title("Rhysix")
     .build();
 

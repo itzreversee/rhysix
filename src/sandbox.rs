@@ -7,7 +7,7 @@ use crate::cell::Cell;
 pub const SANDBOX_WIDTH: usize = 200;
 pub const SANDBOX_HEIGHT: usize = 150;
 pub const SANDBOX_SIZE: usize = SANDBOX_WIDTH * SANDBOX_HEIGHT;
-pub const CELL_SIZE: usize = 4;
+pub const CELL_SIZE: usize = 6;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Material {
@@ -107,7 +107,7 @@ impl Sandbox {
     self.get(x, y + 1).unwrap_or(Cell::oob())
   }
 
-  fn get_pos_left(&self, x: usize, y: usize) -> Option<(usize, usize)> {
+  /*  fn get_pos_left(&self, x: usize, y: usize) -> Option<(usize, usize)> {
     if x == 0 {
       return None;
     }
@@ -120,7 +120,7 @@ impl Sandbox {
     }
     Some((x + 1, y))
   }
-  
+  */
   
   fn get_pos_bot_left(&self, x: usize, y: usize) -> Option<(usize, usize)> {
     if x == 0 || y >= SANDBOX_HEIGHT - 1  {
