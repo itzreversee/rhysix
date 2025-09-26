@@ -210,11 +210,12 @@ impl Sandbox {
     // let l_free: bool = self.get_cell_from_pos_or_oob(self.get_pos_left(x, y)).weight < 1;
     // let r_free: bool = self.get_cell_from_pos_or_oob(self.get_pos_right(x, y)).weight < 1;
 
-    self._update_liquid_balance(x, y, dirs_diag, 4);
-    self._update_liquid_balance(x, y, dirs_flat, 8);
+    if self._update_liquid_balance(x, y, dirs_flat, 8) {
+      let _ = self._update_liquid_balance(x, y, dirs_diag, 4);
+    }
   }
 
-  fn _update_liquid_balance(&mut self, x: usize, y: usize, dirs: [(isize, isize); 2], dist:  isize) {
+  fn _update_liquid_balance(&mut self, x: usize, y: usize, dirs: [(isize, isize); 2], dist:  isize) -> bool {
     for dist in 1..dist {
       for (dx, dy) in dirs {
         let nx = x as isize + (dx * dist);
@@ -229,12 +230,12 @@ impl Sandbox {
             self.swap_cell(x, y, nx as usize, ny as usize);
             break;
           } else {
-            return;
+            return false;
           }
         }
-      
       }
     }
+    return true;
   }
 }
 
