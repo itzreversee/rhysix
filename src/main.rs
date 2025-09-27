@@ -11,6 +11,9 @@ use crate::cell::Cell;
 use crate::element_panel::ElementPanel;
 use crate::sandbox::{render_sandbox, render_mouse_overlay, window_to_world, Sandbox};
 
+const SCREEN_WIDTH: i32 = 1200;
+const SCREEN_HEIGHT: i32 = 900;
+
 struct GameThread {
   handle: RaylibHandle,
   thread: RaylibThread,
@@ -36,8 +39,8 @@ impl GameThread {
     self.element_panel.render(&mut d);
 
     //let title = "rhysix meow";
-    d.draw_text(&title, 1200 - width - 16, 900 - 32, 20, Color::WHITE);
-    d.draw_text(&fps.to_string(), 4, 900 - 20, 20, Color::WHITE);
+    d.draw_text(&title, SCREEN_WIDTH - width - 16, SCREEN_HEIGHT - 32, 20, Color::WHITE);
+    d.draw_text(&fps.to_string(), 4, SCREEN_HEIGHT - 20, 20, Color::WHITE);
   }
 
   fn tick(&mut self) {
@@ -104,7 +107,7 @@ impl GameThread {
 
 fn main() {
   let (rl, thread) = raylib::init()
-    .size(1200, 900)
+    .size(SCREEN_WIDTH, SCREEN_HEIGHT)
     .title("Rhysix")
     .build();
 

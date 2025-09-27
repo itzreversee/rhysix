@@ -1,12 +1,15 @@
 use raylib::{color::Color, math::{Rectangle, Vector2}, prelude::{RaylibDraw, RaylibDrawHandle}, RaylibHandle};
 
-use crate::{cell::Cell, sandbox::{Sandbox}};
+use crate::{cell::Cell, sandbox::Sandbox, SCREEN_HEIGHT, SCREEN_WIDTH};
 
-const PANEL_WIDTH: i32 = 240;
-const PANEL_HEIGHT: i32 = 900 - 16;
+const PANEL_WIDTH: i32 = 200;
+const PANEL_HEIGHT: i32 = SCREEN_HEIGHT - 16;
 
-const PANEL_X: i32 = 1200 - PANEL_WIDTH - 8;
+const PANEL_X: i32 = SCREEN_WIDTH - PANEL_WIDTH - 8;
 const PANEL_Y: i32 = 8;
+
+const BUTTON_WIDTH: i32 = 80;
+const BUTTON_HEIGHT: i32 = 40;
 
 struct PanelButton {
   x: i32,
@@ -19,12 +22,12 @@ struct PanelButton {
 
 impl PanelButton {
   fn render(&self, handle: &mut RaylibDrawHandle) {
-    handle.draw_rectangle(self.x + PANEL_X, self.y + PANEL_Y, 80, 40, self.color);
+    handle.draw_rectangle(self.x + PANEL_X, self.y + PANEL_Y, BUTTON_WIDTH, BUTTON_HEIGHT, self.color);
     handle.draw_text(&self.text, self.x + PANEL_X + 8, self.y + 8 + PANEL_Y, 24, self.text_color);
   }
 
   fn mouse_inside(&self, mouse_pos: Vector2) -> bool {
-    let rect: Rectangle = Rectangle { x: (self.x + PANEL_X) as f32, y: (self.y + PANEL_Y) as f32, width: 80.0, height: 40.0 };
+    let rect: Rectangle = Rectangle { x: (self.x + PANEL_X) as f32, y: (self.y + PANEL_Y) as f32, width: BUTTON_WIDTH as f32, height: BUTTON_HEIGHT as f32 };
     if rect.check_collision_point_rec(mouse_pos) {
       return true;
     }
@@ -75,11 +78,11 @@ impl ElementPanel {
     }
 
     if !self.visible && !self.lock_visibility {
-      if mouse_pos.x > 1150.0 {
+      if mouse_pos.x > (SCREEN_WIDTH - 45) as f32 {
         self.visible = true;
       }
     } else {
-      if mouse_pos.x < ((1200 - PANEL_WIDTH - 20)) as f32 {
+      if mouse_pos.x < ((SCREEN_WIDTH - PANEL_WIDTH - 20)) as f32 {
         self.visible = false;
         self.lock_visibility = false;
       }
